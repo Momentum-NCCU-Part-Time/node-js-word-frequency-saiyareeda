@@ -1,6 +1,6 @@
-const fs = require('fs')
-const path = require('path')
-const filePath = process.argv[2]
+const fs = require('fs');
+const filePath = process.argv[2];
+const limit = parseInt(process.argv[3]);
 
 const STOP_WORDS = [
   'a',
@@ -28,21 +28,45 @@ const STOP_WORDS = [
   'were',
   'will',
   'with',
-]
+];
 
-function printWordFreq(file, callback) {
-  // Read in `file` and print out the frequency of words in that file.
+function printWordFreq(file, limit, callback) {
   fs.readFile(file, 'utf8', (err, data) => {
     if (err) {
-      console.error('Error reading the file:', err)
-      process.exit(1)
+      console.error('Error reading the file:', err);
+      process.exit(1);
     }
-    // TODO: write code to count the words in the file
-    console.log('Initial data read from file: ', data)
-    callback('Your word count results should be passed in to this callback')
-  })
+
+    const words = data.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/);
+
+    const wordFreq = {};
+    words.forEach((word) => {
+      if (!STOP_WORDS.includes(word)) {
+        if (wordFreq[word]) {
+          wordFreq[word]++;
+        } else {
+          wordFreq[word] = 1;
+        }
+      }
+    });
+
+    const wordFreqArray = Object.entries(wordFreq)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit);
+
+    callback(wordFreqArray);
+  });
 }
 
-printWordFreq(filePath, (wordCount) => {
-  console.log('The results from your word counts:', wordCount)
-})
+if (isNaN(limit) || limit <= 0) {
+  console.error('Please provide a valid limit as the third argument (a positive number).');
+  process.exit(1);
+}
+
+printWordFreq(filePath, limit, (wordFreqArray) => {
+  console.log(`Top ${limit} Word frequency:`);
+  wordFreqArray.forEach(([word, frequency]) => {
+    const asterisks = '*'.repeat(frequency);
+    console.log(`${word} | ${frequency} ${asterisks}`);
+  });
+});
